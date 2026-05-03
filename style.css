@@ -5,7 +5,7 @@
     font-style: normal;
 }
 
-@media (max-width: 800px) {
+
     *{
         margin: 0;
         padding: 0;
@@ -81,4 +81,3 @@
     #photos{
         margin-top: 50px;
     }
-}
