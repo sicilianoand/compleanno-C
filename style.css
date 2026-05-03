@@ -1,0 +1,84 @@
+@font-face {
+    font-family: Adelia;
+    src: url(./font/adelia.ttf) format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@media (max-width: 800px) {
+    *{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #b1bdd5;
+    }
+
+    body>div {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .card {
+        position: relative;
+        width: 400px;
+        height: 150px;
+        padding: 20px 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .numero {
+        position: absolute;
+        font-size: clamp(60px, 20vw, 130px);
+        font-weight: bold;
+        font-family: serif;
+        line-height: 1;
+        overflow: hidden;
+
+        color: rgba(255, 255, 255, 0.35);
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.6);
+        -webkit-backdrop-filter: blur(3px);
+        -webkit-background-clip: text;
+    }
+
+    .nome {
+        position: absolute;
+        font-size: 52px;
+        font-family: 'Adelia', cursive;
+        color: #1a3a6e;
+        z-index: 1;
+    }
+
+    #file {
+        display: none;
+    }
+
+    #label {
+        font-size: 130px;
+        font-weight: bold;
+        font-family: serif;
+        line-height: 1;
+
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        background: rgba(255, 255, 255, 0.15);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+
+    #photos{
+        margin-top: 50px;
+    }
+}
