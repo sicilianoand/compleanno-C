@@ -1,4 +1,4 @@
-document.getElementById("file").addEventListener("change", (e) => {
+document.getElementById("file").addEventListener("change", async (e) => {
     /**@type {File} */
     const files = e.target.files;
     for (const file of files) {
