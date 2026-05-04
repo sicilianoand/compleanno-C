@@ -3,16 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=2.0">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
-        
+
     <title>Compleanno Celeste</title>
 </head>
 
 <body>
     <div>
-        <div class="card">
+        <div class="card logo">
             <div class="numero">
                 18
             </div>
@@ -22,14 +22,26 @@
         </div>
 
         <div>
-            <input type="file" name="file" id="file" accept=".jpg,.jpeg" >
-            <label for="file" id="label">+</label>
+            <form action="">
+                <input type="file" name="file" id="file" accept=".jpg,.jpeg" required>
+                <label for="file" id="label">+</label>
+
+                <div id="preview"></div>
+
+                <div id="formButton">
+                    <input type="reset" name="reset" id="reset" value="ANNULLA">
+                    <input type="submit" name="submit" id="submit" value="CARICA">
+                </div>
+            </form>
         </div>
 
         <div id="photos">
-            <img src="img/foto_qrcode.jpg" alt="" width="250px">
         </div>
     </div>
+    <div id="lightbox">
+        <img id="lightboxImage" src="" alt="">
+    </div>
+    <script src="script.js"></script>
 </body>
 
 </html>
