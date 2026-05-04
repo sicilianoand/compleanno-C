@@ -23,9 +23,14 @@
 
         <div>
             <form action="">
-                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif" multiple max="10"
+                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif,.png" multiple max="10"
                     required>
                 <label for="file" id="label">+</label>
+
+                <div id="progressContainer">
+                    <div id="progressBar"></div>
+                </div>
+                <p id="status"></p>
 
                 <div id="preview"></div>
 

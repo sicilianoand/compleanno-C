@@ -74,6 +74,40 @@ form {
     object-fit: cover;
 }
 
+.previewPlaceholder {
+    height: 80px;
+    width: 100%;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: serif;
+    color: #1a3a6e;
+    font-size: 12px;
+}
+
+.previewWrapper {
+    position: relative;
+}
+
+.removeImage {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: serif;
+    line-height: 0.5;
+    color: rgba(255, 255, 255, 0.4);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
 #file {
     display: none;
 }
@@ -157,6 +191,25 @@ form {
     border-radius: 10px;
     object-fit: contain;
 }
+
+#progressContainer {
+    display: none;
+    width: 90%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: #1a3a6e;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
 
 @media (max-width: 768px) {
 

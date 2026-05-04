@@ -1,37 +1,70 @@
 document.getElementById("file").addEventListener("change", async (e) => {
-    /**@type {File} */
+    /**@type {FileList} */
     const files = e.target.files;
+
+    const preview = document.getElementById("preview");
+    const attuali = preview.querySelectorAll(".previewImage").length;
+    const disponibili = 10 - attuali;
+
+    if (disponibili === 0) {
+        document.getElementById("label").style.display = "none";
+        return;
+    }
+
+    if (files.length > disponibili) {
+        alert(`Puoi caricare ancora solo ${disponibili} foto!`);
+        return;
+    }
+
     for (const file of files) {
-        showPreviewImage(file)
+        await showPreviewImage(file);
     }
 })
 
 async function showPreviewImage(/**@type {File}*/file) {
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("previewPlaceholder");
+    placeholder.textContent = "Caricamento";
+    document.getElementById("preview").appendChild(placeholder);
+    document.getElementById("preview").style.display = "grid";
+    document.getElementById("formButton").style.display = "flex";
+    aggiornaGriglia();
+
     let url;
 
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
-        const blob = await heic2any({ blob: file, toType: "image/jpeg" });
+        const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.5 });
         url = URL.createObjectURL(blob);
     } else {
         url = URL.createObjectURL(file);
     }
 
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("previewWrapper");
+
     const img = document.createElement("img");
     img.src = url;
     img.classList.add("previewImage");
+
+    const x = document.createElement("button");
+    x.classList.add("removeImage");
+    x.textContent = "×";
+
+    x.addEventListener("click", () => {
+        wrapper.remove();
+        aggiornaGriglia();
+    });
 
     img.addEventListener("click", () => {
         lightboxImage.src = img.src;
         lightbox.classList.add("attivo");
     });
 
-    document.getElementById("preview").appendChild(img);
-    document.getElementById("preview").style.display = "grid";
-
-    document.getElementById("formButton").style.display = "flex";
-
-    aggiornaGriglia();
+    wrapper.appendChild(img);
+    wrapper.appendChild(x);
+    placeholder.replaceWith(wrapper);
 }
+
 const lightbox = document.getElementById("lightbox");
 const lightboxImage = document.getElementById("lightboxImage");
 
@@ -50,16 +83,14 @@ lightbox.addEventListener("click", () => {
 
 function aggiornaGriglia() {
     const preview = document.getElementById("preview");
-    const immagini = preview.querySelectorAll(".previewImage").length;
+    const immagini = preview.querySelectorAll(".previewWrapper").length;
 
-    if (immagini === 1) {
-        preview.style.gridTemplateColumns = "1fr";
-    } else {
-        preview.style.gridTemplateColumns = "repeat(2, 1fr)";
-    }
+    if (immagini === 1) preview.style.gridTemplateColumns = "1fr";
+    else preview.style.gridTemplateColumns = "repeat(2, 1fr)";
 
-    if (immagini >= 10)
-        document.getElementById("label").style.display = "none";
+
+    if (immagini === 10) document.getElementById("label").style.display = "none";
+    else document.getElementById("label").style.display = "block";
 
 }
 
