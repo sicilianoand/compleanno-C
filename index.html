@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
 
@@ -23,7 +23,8 @@
 
         <div>
             <form action="">
-                <input type="file" name="file" id="file" accept=".jpg,.jpeg" required>
+                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif" multiple max="10"
+                    required>
                 <label for="file" id="label">+</label>
 
                 <div id="preview"></div>
@@ -41,6 +42,7 @@
     <div id="lightbox">
         <img id="lightboxImage" src="" alt="">
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="script.js"></script>
 </body>
 

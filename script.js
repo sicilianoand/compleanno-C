@@ -1,16 +1,25 @@
 document.getElementById("file").addEventListener("change", (e) => {
     /**@type {File} */
-    const file = e.target.files[0];   
-    showPreviewImage(file)
+    const files = e.target.files;
+    for (const file of files) {
+        showPreviewImage(file)
+    }
 })
 
-function showPreviewImage(/**@type {File}*/file) {
-    const url = URL.createObjectURL(file);
-    
+async function showPreviewImage(/**@type {File}*/file) {
+    let url;
+
+    if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+        const blob = await heic2any({ blob: file, toType: "image/jpeg" });
+        url = URL.createObjectURL(blob);
+    } else {
+        url = URL.createObjectURL(file);
+    }
+
     const img = document.createElement("img");
     img.src = url;
     img.classList.add("previewImage");
-    
+
     img.addEventListener("click", () => {
         lightboxImage.src = img.src;
         lightbox.classList.add("attivo");
@@ -20,8 +29,7 @@ function showPreviewImage(/**@type {File}*/file) {
     document.getElementById("preview").style.display = "grid";
 
     document.getElementById("formButton").style.display = "flex";
-    document.getElementById("label").style.display = "none";
-    
+
     aggiornaGriglia();
 }
 const lightbox = document.getElementById("lightbox");
@@ -49,4 +57,14 @@ function aggiornaGriglia() {
     } else {
         preview.style.gridTemplateColumns = "repeat(2, 1fr)";
     }
+
+    if (immagini >= 10)
+        document.getElementById("label").style.display = "none";
+
+}
+
+document.getElementById("reset").onclick = () => {
+    document.getElementById("preview").innerHTML = "";
+    document.getElementById("formButton").style.display = "none";
+    document.getElementById("label").style.display = "block";
 }
