@@ -99,3 +99,66 @@ document.getElementById("reset").onclick = () => {
     document.getElementById("formButton").style.display = "none";
     document.getElementById("label").style.display = "block";
 }
+
+document.getElementById("submit").onclick = async (e) => {
+    e.preventDefault();
+    const immagini = document.querySelectorAll(".previewImage");
+
+    if (immagini.length === 0) return;
+
+    const formData = new FormData();
+
+    for (let i = 0; i < immagini.length; i++) {
+        const blob = await fetch(immagini[i].src).then(r => r.blob());
+        formData.append("foto[]", blob, `foto_${i}.jpg`);
+    }
+
+    const response = await fetch("upload.php", {
+        method: "POST",
+        body: formData
+    });
+
+    const result = await response.text();
+    location.reload();
+    console.log(result);
+}
+
+async function caricaFoto() {
+    const response = await fetch("photos.php");
+    const immagini = await response.json();
+
+    const photos = document.getElementById("photos");
+
+    immagini.forEach(src => {
+        const post = document.createElement("div");
+        post.classList.add("post");
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.classList.add("photoImage");
+        img.addEventListener("click", () => {
+            lightboxImage.src = img.src;
+            lightbox.classList.add("attivo");
+        });
+
+        const actions = document.createElement("div");
+        actions.classList.add("postActions");
+        actions.innerHTML = `
+            <label class="btnCuore">❤️ <span class="contatore">0</span></label>
+            <label class="btnCommento">💬 <span class="contatore">0</span></label>
+            <label class="btnReazione">😊</label>
+        `;
+
+
+        post.appendChild(img);
+        post.appendChild(actions);
+        feed.appendChild(post);
+
+        document.getElementById("btnCuore").onclick = () => {
+            const cont = post.querySelector(".btnCuore .contatore");
+            cont.textContent = parseInt(cont.textContent) + 1;
+        }
+    })
+}
+
+caricaFoto();
