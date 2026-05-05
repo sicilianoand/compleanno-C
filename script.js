@@ -133,6 +133,10 @@ async function caricaFoto() {
         const post = document.createElement("div");
         post.classList.add("post");
 
+        const name = document.createElement("div");
+        name.innerText = "Nome";
+        name.classList.add("name");
+
         const img = document.createElement("img");
         img.src = src;
         img.classList.add("photoImage");
@@ -145,14 +149,14 @@ async function caricaFoto() {
         actions.classList.add("postActions");
         actions.innerHTML = `
             <label class="btnCuore">❤️<span class="contatore">0</span></label>
-            <label class="btnCommento">💬<span class="contatore">0</span></label>
             <label class="btnReazione">😊</label>
         `;
 
-
+        post.appendChild(name);
         post.appendChild(img);
         post.appendChild(actions);
-        feed.appendChild(post);
+        feed.appendChild(post); 
+        
 
         document.querySelectorAll(".btnCuore").forEach((e) => {
             e.addEventListener("click", () => {

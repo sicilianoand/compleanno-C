@@ -112,6 +112,24 @@ form {
     width: 50px;
 }
 
+.post {
+    margin-bottom: 50px;
+
+    border: black 2px solid;
+    border-radius: 7px;
+    padding: 4px;
+}
+
+.name {
+    margin: 5px;
+    font-family: adelia;
+}
+
+.postActions {
+    margin: 5px;
+
+}
+
 #file {
     display: none;
 }
@@ -123,6 +141,8 @@ form {
     font-family: serif;
     line-height: 0.5;
     cursor: pointer;
+
+    margin-bottom: 10px;
 
     color: transparent;
     -webkit-text-stroke: 1px rgba(255, 255, 255, 0.6);
@@ -239,7 +259,7 @@ form {
 }
 
 #feed {
-    margin: 10px;
+    margin: 10;
 }
 
 @media (max-width: 768px) {
