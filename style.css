@@ -238,6 +238,9 @@ form {
     scroll-snap-align: center;
 }
 
+#feed {
+    margin: 10px;
+}
 
 @media (max-width: 768px) {
 

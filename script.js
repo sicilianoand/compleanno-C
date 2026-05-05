@@ -127,7 +127,7 @@ async function caricaFoto() {
     const response = await fetch("photos.php");
     const immagini = await response.json();
 
-    const photos = document.getElementById("photos");
+    const feed = document.getElementById("feed");
 
     immagini.forEach(src => {
         const post = document.createElement("div");
@@ -144,8 +144,8 @@ async function caricaFoto() {
         const actions = document.createElement("div");
         actions.classList.add("postActions");
         actions.innerHTML = `
-            <label class="btnCuore">❤️ <span class="contatore">0</span></label>
-            <label class="btnCommento">💬 <span class="contatore">0</span></label>
+            <label class="btnCuore">❤️<span class="contatore">0</span></label>
+            <label class="btnCommento">💬<span class="contatore">0</span></label>
             <label class="btnReazione">😊</label>
         `;
 
@@ -154,11 +154,13 @@ async function caricaFoto() {
         post.appendChild(actions);
         feed.appendChild(post);
 
-        document.getElementById("btnCuore").onclick = () => {
-            const cont = post.querySelector(".btnCuore .contatore");
-            cont.textContent = parseInt(cont.textContent) + 1;
-        }
-    })
+        document.querySelectorAll(".btnCuore").forEach((e) => {
+            e.addEventListener("click", () => {
+                const cont = post.querySelector(".btnCuore .contatore");
+                cont.textContent = parseInt(cont.textContent) + 1;
+            });
+        });
+    });
 }
 
 caricaFoto();
