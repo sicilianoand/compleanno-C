@@ -155,12 +155,13 @@ async function caricaFoto() {
         post.appendChild(name);
         post.appendChild(img);
         post.appendChild(actions);
-        feed.appendChild(post); 
-        
+        feed.appendChild(post);
+
 
         document.querySelectorAll(".btnCuore").forEach((e) => {
             e.addEventListener("click", () => {
-                const cont = post.querySelector(".btnCuore .contatore");
+                console.log(typeof e);
+                const cont = Array.from(e)[0];
                 cont.textContent = parseInt(cont.textContent) + 1;
             });
         });

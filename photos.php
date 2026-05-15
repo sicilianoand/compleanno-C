@@ -9,4 +9,3 @@ foreach ($files as $file) {
 
 header("Content-Type: application/json");
 echo json_encode($immagini);
-?>

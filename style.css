@@ -31,6 +31,21 @@ form {
     display: flex;
     flex-direction: column;
     align-items: center;
+    border: none;
+    /* aggiungi */
+    outline: none;
+    /* aggiungi */
+    -webkit-appearance: none;
+    /* aggiungi — rimuove stili nativi Safari */
+    appearance: none;
+    /* aggiungi */
+}
+
+input[type="reset"],
+input[type="submit"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
 }
 
 .card {
@@ -51,12 +66,11 @@ form {
     font-weight: bold;
     font-family: serif;
     line-height: 1;
-    overflow: hidden;
+    /* rimuovi overflow: hidden — taglia il testo su iOS */
 
     color: rgba(255, 255, 255, 0.35);
     -webkit-text-stroke: 1px rgba(255, 255, 255, 0.6);
-    -webkit-backdrop-filter: blur(3px);
-    -webkit-background-clip: text;
+    /* rimuovi -webkit-backdrop-filter e -webkit-background-clip: non servono senza un background */
 }
 
 .nome {
@@ -65,6 +79,9 @@ form {
     font-family: 'Adelia', cursive;
     color: #1a3a6e;
     z-index: 1;
+    /* aggiungi questo per evitare tagli su iOS */
+    overflow: visible;
+    white-space: nowrap;
 }
 
 .previewImage {
@@ -132,6 +149,7 @@ form {
 
 #file {
     display: none;
+
 }
 
 #label {
