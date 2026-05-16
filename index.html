@@ -30,7 +30,7 @@
         <button class="btn-user" id="changeUserBtn">Cambia utente</button>
     </div>
 
-    <div>
+    <div id="pageContent">
         <div class="card logo">
             <div class="numero">18</div>
             <div class="nome">Celeste</div>
@@ -62,6 +62,38 @@
     <div id="lightbox">
         <button class="lightbox-close" aria-label="Chiudi"></button>
         <img id="lightboxImage" src="" alt="">
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="notification-modal">
+        <div class="notification-content">
+            <p id="notificationText"></p>
+            <button id="notificationBtn" class="notification-btn">OK</button>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-content">
+            <p id="confirmText"></p>
+            <div class="confirm-buttons">
+                <button id="confirmBtnCancel" class="btn-confirm-cancel">Annulla</button>
+                <button id="confirmBtnOk" class="btn-confirm-ok">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Username Input Modal -->
+    <div id="usernameModal" class="username-modal">
+        <div class="username-content">
+            <h2>Benvenuto!</h2>
+            <p>Qual è il tuo nome?</p>
+            <input type="text" id="usernameInput" placeholder="Inserisci il tuo nome" autocomplete="name">
+            <div class="username-buttons">
+                <button id="usernameBtnSkip" class="btn-skip">Salta</button>
+                <button id="usernameBtnConfirm" class="btn-confirm">Continua</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>

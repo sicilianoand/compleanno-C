@@ -9,6 +9,71 @@ let currentUser = null;
 let currentUserId = null;
 
 /**
+ * Mostra modale di conferma personalizzata — restituisce una Promise<boolean>
+ */
+function showConfirm(message, { confirmLabel = 'Conferma', distruttivo = false } = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const textEl = document.getElementById('confirmText');
+        const btnOk = document.getElementById('confirmBtnOk');
+        const btnCancel = document.getElementById('confirmBtnCancel');
+        const pageContent = document.getElementById('pageContent');
+
+        textEl.textContent = message;
+        btnOk.textContent = confirmLabel;
+        btnOk.classList.toggle('distruttivo', distruttivo);
+
+        modal.classList.add('attivo');
+        pageContent.classList.add('blur');
+
+        const close = (result) => {
+            modal.classList.remove('attivo');
+            pageContent.classList.remove('blur');
+            btnOk.removeEventListener('click', handleOk);
+            btnCancel.removeEventListener('click', handleCancel);
+            document.removeEventListener('keydown', handleKey);
+            resolve(result);
+        };
+
+        const handleOk = () => close(true);
+        const handleCancel = () => close(false);
+        const handleKey = (e) => { if (e.key === 'Escape') close(false); };
+
+        btnOk.addEventListener('click', handleOk);
+        btnCancel.addEventListener('click', handleCancel);
+        document.addEventListener('keydown', handleKey);
+    });
+}
+
+/**
+ * Mostra notifica modale al centro dello schermo
+ */
+function showNotification(message) {
+    const modal = document.getElementById('notificationModal');
+    const textEl = document.getElementById('notificationText');
+    const btnEl = document.getElementById('notificationBtn');
+    const pageContent = document.getElementById('pageContent');
+
+    textEl.textContent = message;
+    modal.classList.add('attivo');
+    pageContent.classList.add('blur');
+
+    const closeNotification = () => {
+        modal.classList.remove('attivo');
+        pageContent.classList.remove('blur');
+        btnEl.removeEventListener('click', closeNotification);
+        document.removeEventListener('keydown', handleEscape);
+    };
+
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') closeNotification();
+    };
+
+    btnEl.addEventListener('click', closeNotification);
+    document.addEventListener('keydown', handleEscape);
+}
+
+/**
  * Inizializza il sistema utenti al caricamento della pagina
  */
 async function initUser() {
@@ -28,28 +93,53 @@ async function initUser() {
 }
 
 /**
- * Mostra prompt nativo per richiedere username
+ * Mostra modal per richiedere username
  */
 function promptForUsername() {
-    let username = null;
+    const modal = document.getElementById('usernameModal');
+    const input = document.getElementById('usernameInput');
+    const btnConfirm = document.getElementById('usernameBtnConfirm');
+    const btnSkip = document.getElementById('usernameBtnSkip');
+    const pageContent = document.getElementById('pageContent');
 
-    while (!username || username.trim().length < 2) {
-        username = prompt('👋 Benvenuto! Qual è il tuo nome?', '');
+    modal.classList.add('attivo');
+    pageContent.classList.add('blur');
+    input.focus();
 
-        if (username === null) {
-            username = `Guest_${Math.floor(Math.random() * 10000)}`;
-            break;
+    const handleConfirm = () => {
+        const username = input.value.trim();
+
+        if (username.length < 2) {
+            showNotification('⚠️ Il nome deve avere almeno 2 caratteri');
+            input.focus();
+            return;
         }
 
-        if (username.trim().length < 2) {
-            alert('⚠️ Il nome deve avere almeno 2 caratteri');
-            continue;
-        }
+        closeModal();
+        registerUser(username);
+    };
 
-        break;
-    }
+    const handleSkip = () => {
+        closeModal();
+        const guestName = `Guest_${Math.floor(Math.random() * 10000)}`;
+        registerUser(guestName);
+    };
 
-    registerUser(username.trim());
+    const closeModal = () => {
+        modal.classList.remove('attivo');
+        pageContent.classList.remove('blur');
+        btnConfirm.removeEventListener('click', handleConfirm);
+        btnSkip.removeEventListener('click', handleSkip);
+        input.removeEventListener('keydown', handleEnter);
+    };
+
+    const handleEnter = (e) => {
+        if (e.key === 'Enter') handleConfirm();
+    };
+
+    btnConfirm.addEventListener('click', handleConfirm);
+    btnSkip.addEventListener('click', handleSkip);
+    input.addEventListener('keydown', handleEnter);
 }
 
 /**
@@ -81,11 +171,11 @@ async function registerUser(username) {
                 console.log(`👋 Bentornato ${currentUser}!`);
             }
         } else {
-            alert('❌ Errore registrazione: ' + (data.errore || 'Sconosciuto'));
+            showNotification('❌ Errore registrazione: ' + (data.errore || 'Sconosciuto'));
         }
     } catch (error) {
         console.error('Errore registrazione:', error);
-        alert('❌ Errore connessione server');
+        showNotification('❌ Errore connessione server');
     }
 }
 
@@ -108,7 +198,7 @@ function updateUserDisplay() {
 
 document.getElementById('file').addEventListener('change', async (e) => {
     if (!currentUserId) {
-        alert('❌ Utente non autenticato');
+        showNotification('❌ Utente non autenticato');
         return;
     }
 
@@ -118,13 +208,13 @@ document.getElementById('file').addEventListener('change', async (e) => {
     const disponibili = 10 - attuali;
 
     if (disponibili === 0) {
-        alert('⚠️ Hai raggiunto il limite di 10 foto');
+        showNotification('⚠️ Hai raggiunto il limite di 10 foto');
         document.getElementById('label').style.display = 'none';
         return;
     }
 
     if (files.length > disponibili) {
-        alert(`⚠️ Puoi caricare ancora solo ${disponibili} foto!`);
+        showNotification(`⚠️ Puoi caricare ancora solo ${disponibili} foto!`);
         return;
     }
 
@@ -143,14 +233,13 @@ async function showPreviewImage(file) {
     document.getElementById('preview').appendChild(placeholder);
     document.getElementById('preview').style.display = 'grid';
     document.getElementById('formButton').style.display = 'flex';
-    aggiornaGriglia();
+    // NON chiamare aggiornaGriglia qui — il wrapper non esiste ancora
 
     let url;
     let convertedBlob = null;
 
     try {
         if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-            // FIX Bug 5: salva il blob convertito per usarlo nell'upload con estensione corretta
             convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
             url = URL.createObjectURL(convertedBlob);
         } else {
@@ -164,7 +253,6 @@ async function showPreviewImage(file) {
         img.src = url;
         img.classList.add('previewImage');
 
-        // FIX Bug 5: se era HEIC, salva nome con .jpg e type corretto
         const nomeFile = convertedBlob
             ? file.name.replace(/\.(heic|heif)$/i, '.jpg')
             : file.name;
@@ -194,7 +282,8 @@ async function showPreviewImage(file) {
 
         wrapper.appendChild(img);
         wrapper.appendChild(btnRemove);
-        placeholder.replaceWith(wrapper);
+        placeholder.replaceWith(wrapper); // prima sostituisce...
+        aggiornaGriglia();                // ...poi aggiorna la griglia
 
     } catch (error) {
         console.error('Errore processamento file:', error);
@@ -241,14 +330,14 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (!currentUserId) {
-        alert('❌ Utente non autenticato');
+        showNotification('❌ Utente non autenticato');
         return;
     }
 
     const immagini = document.querySelectorAll('.previewImage');
 
     if (immagini.length === 0) {
-        alert('⚠️ Seleziona almeno una foto');
+        showNotification('⚠️ Seleziona almeno una foto');
         return;
     }
 
@@ -296,9 +385,13 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
             xhr.addEventListener('load', () => {
                 try {
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        reject(new Error(`Errore server (${xhr.status}): ${xhr.responseText}`));
+                        return;
+                    }
                     resolve(JSON.parse(xhr.responseText));
-                } catch {
-                    reject(new Error('Risposta non valida dal server'));
+                } catch (e) {
+                    reject(new Error('Risposta non valida dal server: ' + e.message));
                 }
             });
 
@@ -356,7 +449,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('Errore upload:', error);
-        statusEl.textContent = '❌ Errore durante il caricamento';
+        statusEl.textContent = `❌ Errore: ${error.message || 'durante il caricamento'}`;
         progressContainer.style.display = 'none';
     } finally {
         submitBtn.disabled = false;
@@ -400,17 +493,71 @@ function getHeartSvg() {
 /**
  * Crea il DOM element di un post dato un oggetto foto
  */
-function creaPostElement(foto) {
+function creaPostElement(foto, isPrima = false) {
     const post = document.createElement('div');
     post.classList.add('post');
     post.dataset.fotoId = foto.id;
 
+    if (isPrima) {
+        post.classList.add('prima-foto');
+        const badge = document.createElement('div');
+        badge.classList.add('prima-foto-badge');
+        badge.innerHTML = '<span class="badge-trophy">🏆</span><span>Prima foto del party!</span>';
+        post.appendChild(badge);
+    }
+
     const header = document.createElement('div');
     header.classList.add('post-header');
+    const isOwnPhoto = foto.username === currentUser;
     header.innerHTML = `
         <span class="post-username">👤 ${escapeHtml(foto.username)}</span>
         <span class="post-date">${formatDate(foto.data)}</span>
+        ${isOwnPhoto ? '<button class="btn-delete-photo" title="Elimina questa foto">🗑️</button>' : ''}
     `;
+
+    if (isOwnPhoto) {
+        const deleteBtn = header.querySelector('.btn-delete-photo');
+        deleteBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!await showConfirm('Sei sicuro di voler eliminare questa foto?', { confirmLabel: 'Elimina', distruttivo: true })) {
+                return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = '⏳';
+
+            try {
+                const response = await fetch('PHP/api-photos.php?action=delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        foto_id: foto.id,
+                        utente_id: currentUserId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.successo) {
+                    post.style.opacity = '0.5';
+                    setTimeout(() => {
+                        post.remove();
+                    }, 300);
+                } else {
+                    showNotification('❌ Errore eliminazione: ' + (data.errore || 'Sconosciuto'));
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = '🗑️';
+                }
+            } catch (error) {
+                console.error('Errore eliminazione foto:', error);
+                showNotification('❌ Errore: ' + error.message);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑️';
+            }
+        });
+    }
 
     const media = document.createElement('div');
     media.classList.add('post-media');
@@ -472,21 +619,169 @@ async function caricaFoto() {
         feed.innerHTML = '';
 
         if (data.foto.length === 0) {
-            feed.innerHTML = '<p class="empty-message">📸 Nessuna foto ancora. Sii il primo!</p>';
+            feed.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">📸</span>
+                    <h3 class="empty-title">Nessuna foto ancora</h3>
+                    <p class="empty-subtitle">Sii il primo a condividere<br>un momento speciale!</p>
+                </div>`;
+            avviaSSE();
             return;
         }
 
+        const primaFotoId = Math.min(...data.foto.map(f => f.id));
         for (const foto of data.foto) {
-            feed.appendChild(creaPostElement(foto));
+            feed.appendChild(creaPostElement(foto, foto.id === primaFotoId));
         }
+        maxFotoId = Math.max(...data.foto.map(f => f.id));
 
         attachLikeListeners();
+        avviaSSE();
 
     } catch (error) {
         console.error('Errore caricamento feed:', error);
         document.getElementById('feed').innerHTML = '<p class="error-message">❌ Errore caricamento feed</p>';
     }
 }
+
+// ============= AGGIORNAMENTI REAL-TIME (SSE) =============
+
+let maxFotoId = 0;
+let lastDeleteId = 0;
+let sseConnessione = null;
+let pollingInterval = null; // usato solo come fallback
+
+/**
+ * Inserisce nel feed le foto arrivate via SSE (o polling fallback).
+ * nuoveFoto è già ordinata ASC (più vecchia prima) — il reverse le mette
+ * nella posizione giusta: la più recente in cima.
+ */
+function inserisciFotoNelFeed(nuoveFoto) {
+    const feed = document.getElementById('feed');
+    const idNelFeed = new Set(
+        [...feed.querySelectorAll('.post[data-foto-id]')].map(el => parseInt(el.dataset.fotoId))
+    );
+
+    const davveroNuove = nuoveFoto.filter(f => !idNelFeed.has(f.id));
+    if (davveroNuove.length === 0) return;
+
+    feed.querySelector('.empty-state')?.remove();
+
+    const tuttiGliId = [...idNelFeed, ...davveroNuove.map(f => f.id)];
+    const primaFotoId = Math.min(...tuttiGliId);
+    const haBadge = !!feed.querySelector('.prima-foto-badge');
+
+    davveroNuove.forEach(foto => {
+        const isPrima = !haBadge && foto.id === primaFotoId;
+        const post = creaPostElement(foto, isPrima);
+        post.classList.add('nuova');
+        feed.insertBefore(post, feed.firstChild);
+        setTimeout(() => post.classList.remove('nuova'), 600);
+        maxFotoId = Math.max(maxFotoId, foto.id);
+    });
+
+    if (!haBadge) {
+        const primaPost = feed.querySelector(`[data-foto-id="${primaFotoId}"]`);
+        if (primaPost && !primaPost.querySelector('.prima-foto-badge')) {
+            primaPost.classList.add('prima-foto');
+            const badge = document.createElement('div');
+            badge.classList.add('prima-foto-badge');
+            badge.innerHTML = '<span class="badge-trophy">🏆</span><span>Prima foto del party!</span>';
+            primaPost.insertBefore(badge, primaPost.firstChild);
+        }
+    }
+
+    attachLikeListeners();
+}
+
+/**
+ * Apre una connessione SSE verso il server.
+ * Il server spinge nuove foto in push ogni ~2 s appena arrivano nel DB.
+ * In caso di errore permanente cade in fallback su polling ogni 5 s.
+ */
+function avviaSSE() {
+    if (!window.EventSource) { avviaPolling(); return; }
+    if (sseConnessione) sseConnessione.close();
+
+    const params = new URLSearchParams({ lastId: maxFotoId, lastDeleteId });
+    if (currentUserId) params.set('utente_id', currentUserId);
+
+    sseConnessione = new EventSource(`PHP/events.php?${params}`);
+
+    sseConnessione.addEventListener('nuove-foto', (e) => {
+        const { foto } = JSON.parse(e.data);
+        if (foto?.length) inserisciFotoNelFeed(foto);
+    });
+
+    sseConnessione.addEventListener('foto-eliminata', (e) => {
+        const { ids } = JSON.parse(e.data);
+        ids?.forEach(eliminaPostDalFeed);
+    });
+
+    let errori = 0;
+    sseConnessione.onerror = () => {
+        errori++;
+        if (errori >= 3) {
+            sseConnessione.close();
+            sseConnessione = null;
+            avviaPolling();
+        }
+    };
+
+    sseConnessione.addEventListener('connected', () => { errori = 0; });
+}
+
+/**
+ * Rimuove un post dal feed con animazione, dato il suo foto_id.
+ */
+function eliminaPostDalFeed(fotoId) {
+    const post = document.querySelector(`.post[data-foto-id="${fotoId}"]`);
+    if (!post) return;
+
+    post.classList.add('eliminata');
+    post.addEventListener('animationend', () => {
+        post.remove();
+        // Se il feed è rimasto vuoto, mostra l'empty state
+        const feed = document.getElementById('feed');
+        if (!feed.querySelector('.post')) {
+            feed.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">📸</span>
+                    <h3 class="empty-title">Nessuna foto ancora</h3>
+                    <p class="empty-subtitle">Sii il primo a condividere<br>un momento speciale!</p>
+                </div>`;
+        }
+    }, { once: true });
+}
+
+/** Fallback polling usato se SSE non è disponibile o fallisce */
+function avviaPolling() {
+    if (pollingInterval) return;
+    pollingInterval = setInterval(async () => {
+        try {
+            const url = currentUserId
+                ? `PHP/photos.php?utente_id=${currentUserId}`
+                : 'PHP/photos.php';
+            const data = await fetch(url).then(r => r.json());
+            if (data.successo && data.foto.length) {
+                const nuove = data.foto.filter(f => f.id > maxFotoId);
+                if (nuove.length) inserisciFotoNelFeed([...nuove].reverse());
+            }
+        } catch (e) { console.error('Polling error:', e); }
+    }, 5000);
+}
+
+// Chiudi SSE quando la tab va in background, riapri al ritorno
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        sseConnessione?.close();
+        sseConnessione = null;
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    } else if (currentUserId) {
+        avviaSSE();
+    }
+});
 
 /**
  * Escape HTML per prevenire XSS
@@ -508,7 +803,7 @@ function attachLikeListeners() {
             e.preventDefault();
 
             if (!currentUserId) {
-                alert('❌ Devi essere autenticato per mettere like');
+                showNotification('❌ Devi essere autenticato per mettere like');
                 return;
             }
 
@@ -591,7 +886,8 @@ document.addEventListener('DOMContentLoaded', () => {
         headerOverlay.classList.remove('aperto');
     }
 
-    headerDot.addEventListener('click', () => {
+    headerDot.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (headerBox.classList.contains('aperto')) {
             chiudiPopup();
         } else {
@@ -599,10 +895,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Chiudi toccando l'overlay (si restringe nell'angolo)
-    headerOverlay.addEventListener('click', chiudiPopup);
+    // Chiudi cliccando fuori dal popup (su qualsiasi elemento della pagina)
+    document.addEventListener('mousedown', (e) => {
+        if (
+            headerBox.classList.contains('aperto') &&
+            !headerBox.contains(e.target) &&
+            !headerDot.contains(e.target)
+        ) {
+            chiudiPopup();
+        }
+    });
 
-    // Chiudi allo scroll — si restringe con l'animazione spring inversa
+    // Stesso comportamento su touch (mobile)
+    document.addEventListener('touchstart', (e) => {
+        if (
+            headerBox.classList.contains('aperto') &&
+            !headerBox.contains(e.target) &&
+            !headerDot.contains(e.target)
+        ) {
+            chiudiPopup();
+        }
+    }, { passive: true });
+
+    // Chiudi allo scroll
     window.addEventListener('scroll', () => {
         if (headerBox.classList.contains('aperto')) {
             chiudiPopup();
@@ -611,17 +926,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cambia utente
     if (changeUserBtn) {
-        changeUserBtn.addEventListener('click', () => {
+        changeUserBtn.addEventListener('click', async () => {
             chiudiPopup();
-            setTimeout(() => {
-                if (confirm('Sei sicuro di voler cambiare utente?')) {
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('username');
-                    currentUser = null;
-                    currentUserId = null;
-                    location.reload();
-                }
-            }, 200);
+            await new Promise(r => setTimeout(r, 200));
+            if (await showConfirm('Sei sicuro di voler cambiare utente?', { confirmLabel: 'Cambia' })) {
+                localStorage.removeItem('userId');
+                localStorage.removeItem('username');
+                currentUser = null;
+                currentUserId = null;
+                location.reload();
+            }
         });
     }
 
