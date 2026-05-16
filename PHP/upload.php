@@ -6,6 +6,9 @@
 
 require_once 'config.php';
 
+// Permetti richieste cross-origin se necessario (utile in sviluppo locale)
+header('Access-Control-Allow-Origin: *');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['errore' => 'Metodo non consentito'], 405);
 }
@@ -19,9 +22,9 @@ if (empty($userId) || !is_numeric($userId)) {
     jsonResponse(['errore' => 'ID utente non valido'], 400);
 }
 
-$userId = (int)$userId;
+$userId      = (int)$userId;
 $fotoCaricate = [];
-$fotoFallite = [];
+$fotoFallite  = [];
 
 try {
     $pdo = getDBConnection();
@@ -40,16 +43,16 @@ try {
             continue;
         }
 
-        $tmpFile = $_FILES['foto']['tmp_name'][$i];
+        $tmpFile    = $_FILES['foto']['tmp_name'][$i];
         $nomeOrigine = basename($_FILES['foto']['name'][$i]);
-        $dimensione = $_FILES['foto']['size'][$i];
+        $dimensione  = $_FILES['foto']['size'][$i];
 
         if ($dimensione > UPLOAD_MAX_SIZE) {
             $fotoFallite[] = "$nomeOrigine: File troppo grande (max " . (UPLOAD_MAX_SIZE / 1024 / 1024) . "MB)";
             continue;
         }
 
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $tmpFile);
         finfo_close($finfo);
 
@@ -64,7 +67,7 @@ try {
             continue;
         }
 
-        $nomeFile = generateSecureFilename($estensione);
+        $nomeFile             = generateSecureFilename($estensione);
         $percorsoDestinazione = UPLOAD_DIR . $nomeFile;
 
         if (!move_uploaded_file($tmpFile, $percorsoDestinazione)) {
@@ -74,6 +77,10 @@ try {
 
         chmod($percorsoDestinazione, 0644);
 
+        // Percorso relativo a index.html (nella root del progetto)
+        // index.html è in /  →  uploads/ è in /uploads/
+        $percorsoRelativo = 'uploads/' . $nomeFile;
+
         try {
             $stmt = $pdo->prepare(
                 'INSERT INTO foto (utente_id, nome_file, percorso, tipo_file, dimensione)
@@ -82,17 +89,17 @@ try {
             $stmt->execute([
                 $userId,
                 $nomeOrigine,
-                '../uploads/' . $nomeFile,
+                $percorsoRelativo,
                 $mimeType,
                 $dimensione
             ]);
 
-            $fotoId = $pdo->lastInsertId();
+            $fotoId       = $pdo->lastInsertId();
             $fotoCaricate[] = [
-                'id' => (int)$fotoId,
-                'nome' => $nomeOrigine,
-                'percorso' => '../uploads/' . $nomeFile,
-                'tipo' => $mimeType
+                'id'      => (int)$fotoId,
+                'nome'    => $nomeOrigine,
+                'percorso' => $percorsoRelativo,
+                'tipo'    => $mimeType
             ];
 
         } catch (Exception $e) {
@@ -105,9 +112,9 @@ try {
     jsonResponse([
         'successo' => count($fotoCaricate) > 0,
         'caricate' => count($fotoCaricate),
-        'fallite' => count($fotoFallite),
-        'foto' => $fotoCaricate,
-        'errori' => $fotoFallite
+        'fallite'  => count($fotoFallite),
+        'foto'     => $fotoCaricate,
+        'errori'   => $fotoFallite
     ]);
 
 } catch (Exception $e) {
@@ -117,11 +124,11 @@ try {
 
 function getMimeExtension($mimeType) {
     $mimeMap = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        'video/mp4' => 'mp4',
-        'video/webm' => 'webm',
+        'image/jpeg'      => 'jpg',
+        'image/png'       => 'png',
+        'image/webp'      => 'webp',
+        'video/mp4'       => 'mp4',
+        'video/webm'      => 'webm',
         'video/quicktime' => 'mov'
     ];
     return $mimeMap[$mimeType] ?? null;

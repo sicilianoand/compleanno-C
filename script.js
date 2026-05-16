@@ -268,12 +268,14 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         const formData = new FormData();
         formData.append('utente_id', currentUserId);
 
+        // Salva i blob URL delle preview PRIMA di svuotare il DOM
+        const previewSrcs = [];
         for (let i = 0; i < immagini.length; i++) {
+            previewSrcs.push(immagini[i].src);
             const blob = await fetch(immagini[i].src).then(r => r.blob());
             const fileData = JSON.parse(immagini[i].dataset.file);
             formData.append('foto[]', blob, fileData.name);
 
-            // Aggiorna progress durante la preparazione
             const pct = Math.round(((i + 1) / immagini.length) * 50);
             progressBar.style.width = pct + '%';
         }
@@ -284,8 +286,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         const result = await new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', 'PHP/upload.php');
-            console.log("OPEN");
-            
+
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
                     const pct = 50 + Math.round((e.loaded / e.total) * 50);
@@ -319,18 +320,28 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             const emptyMsg = feed.querySelector('.empty-message');
             if (emptyMsg) emptyMsg.remove();
 
-            for (const foto of [...result.foto].reverse()) {
+            const foteCopy = [...result.foto].reverse();
+            foteCopy.forEach((foto, idx) => {
+                // Usa il blob URL della preview come src temporaneo — visibile subito
+                const srcTemporaneo = previewSrcs[result.foto.length - 1 - idx] || foto.percorso;
                 const post = creaPostElement({
                     id: foto.id,
-                    percorso: foto.percorso,
+                    percorso: srcTemporaneo,
                     tipo: foto.tipo,
                     username: currentUser,
                     data: new Date().toISOString(),
                     like: 0,
                     user_liked: false
                 });
+                // Aggiorna il src con quello reale del server in background
+                const imgEl = post.querySelector('.photoImage');
+                if (imgEl) {
+                    const realImg = new Image();
+                    realImg.onload = () => { imgEl.src = foto.percorso; };
+                    realImg.src = foto.percorso;
+                }
                 feed.insertBefore(post, feed.firstChild);
-            }
+            });
             attachLikeListeners();
 
             setTimeout(() => {
@@ -590,6 +601,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Chiudi toccando l'overlay (si restringe nell'angolo)
     headerOverlay.addEventListener('click', chiudiPopup);
+
+    // Chiudi allo scroll — si restringe con l'animazione spring inversa
+    window.addEventListener('scroll', () => {
+        if (headerBox.classList.contains('aperto')) {
+            chiudiPopup();
+        }
+    }, { passive: true });
 
     // Cambia utente
     if (changeUserBtn) {

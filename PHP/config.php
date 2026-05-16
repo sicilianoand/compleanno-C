@@ -8,7 +8,8 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'compleanno_amore');
 
-define('UPLOAD_DIR', __DIR__ . '../uploads/');
+// UPLOAD_DIR punta a /uploads/ nella root del progetto (un livello sopra /PHP/)
+define('UPLOAD_DIR', dirname(__DIR__) . '/uploads/');
 define('UPLOAD_MAX_SIZE', 50 * 1024 * 1024); // 50 MB
 
 define('ALLOWED_MIME_TYPES', [
@@ -36,7 +37,7 @@ function getDBConnection() {
             DB_USER,
             DB_PASS,
             [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]
         );

@@ -8,29 +8,16 @@ require_once 'config.php';
 
 $action = $_GET['action'] ?? null;
 
-// ============================================================================
-// POST: Registra/recupera utente
-// ============================================================================
 if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     handleRegister();
-}
-
-// ============================================================================
-// GET: Recupera dati utente
-// ============================================================================
-elseif ($action === 'get' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+} elseif ($action === 'get' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     handleGetUser();
-}
-
-else {
+} else {
     jsonResponse(['errore' => 'Azione non valida'], 400);
 }
 
-// ============================================================================
-// HANDLER: Registrazione Utente
-// ============================================================================
 function handleRegister() {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input    = json_decode(file_get_contents('php://input'), true);
     $username = $input['username'] ?? null;
 
     if (empty($username)) {
@@ -43,7 +30,8 @@ function handleRegister() {
         jsonResponse(['errore' => 'Username minimo 2 caratteri'], 400);
     }
 
-    $username = preg_replace('/[^a-zA-Z0-9_ ]/u', '', $username);
+    // Permette lettere (incluse accentate), numeri, underscore e spazi
+    $username = preg_replace('/[^\p{L}0-9_ ]/u', '', $username);
 
     if (empty($username)) {
         jsonResponse(['errore' => 'Username contiene caratteri non validi'], 400);
@@ -59,9 +47,9 @@ function handleRegister() {
         if ($user) {
             jsonResponse([
                 'successo' => true,
-                'id' => (int)$user['id'],
+                'id'       => (int)$user['id'],
                 'username' => $user['username'],
-                'nuovo' => false
+                'nuovo'    => false
             ]);
         }
 
@@ -71,9 +59,9 @@ function handleRegister() {
 
         jsonResponse([
             'successo' => true,
-            'id' => $userId,
+            'id'       => $userId,
             'username' => $username,
-            'nuovo' => true
+            'nuovo'    => true
         ]);
 
     } catch (Exception $e) {
@@ -82,9 +70,6 @@ function handleRegister() {
     }
 }
 
-// ============================================================================
-// HANDLER: Recupera Utente
-// ============================================================================
 function handleGetUser() {
     $userId = $_GET['id'] ?? null;
 
@@ -93,7 +78,7 @@ function handleGetUser() {
     }
 
     try {
-        $pdo = getDBConnection();
+        $pdo  = getDBConnection();
         $stmt = $pdo->prepare('SELECT id, username, created_at FROM utenti WHERE id = ?');
         $stmt->execute([(int)$userId]);
         $user = $stmt->fetch();
@@ -104,9 +89,9 @@ function handleGetUser() {
 
         jsonResponse([
             'successo' => true,
-            'utente' => [
-                'id' => (int)$user['id'],
-                'username' => $user['username'],
+            'utente'   => [
+                'id'         => (int)$user['id'],
+                'username'   => $user['username'],
                 'created_at' => $user['created_at']
             ]
         ]);

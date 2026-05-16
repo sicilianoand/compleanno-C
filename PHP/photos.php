@@ -9,13 +9,12 @@ require_once 'config.php';
 try {
     $pdo = getDBConnection();
 
-    // FIX Bug 6: accetta utente_id opzionale per sapere quali foto ha già messo like
+    // Accetta utente_id opzionale per sapere quali foto ha già messo like
     $utenteId = isset($_GET['utente_id']) && is_numeric($_GET['utente_id'])
         ? (int)$_GET['utente_id']
         : null;
 
     if ($utenteId !== null) {
-        // Query con stato liked per l'utente corrente
         $stmt = $pdo->prepare(
             'SELECT
                 f.id,
@@ -31,7 +30,6 @@ try {
         );
         $stmt->execute([$utenteId]);
     } else {
-        // Query senza utente (like non personalizzati)
         $stmt = $pdo->query(
             'SELECT
                 f.id,
@@ -52,12 +50,13 @@ try {
     $result = array_map(function ($item) {
         return [
             'id'         => (int)$item['id'],
+            // Il percorso è già salvato come "uploads/nomefile" → corretto per index.html nella root
             'percorso'   => $item['percorso'],
             'tipo'       => $item['tipo_file'],
             'username'   => $item['username'],
             'data'       => $item['created_at'],
             'like'       => (int)$item['total_like'],
-            'user_liked' => (bool)$item['user_liked'] // FIX Bug 6
+            'user_liked' => (bool)$item['user_liked']
         ];
     }, $foto);
 
