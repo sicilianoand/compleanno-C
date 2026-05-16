@@ -8,7 +8,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'compleanno_amore');
 
-define('UPLOAD_DIR', __DIR__ . '/uploads/');
+define('UPLOAD_DIR', __DIR__ . '../uploads/');
 define('UPLOAD_MAX_SIZE', 50 * 1024 * 1024); // 50 MB
 
 define('ALLOWED_MIME_TYPES', [

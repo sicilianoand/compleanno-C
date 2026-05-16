@@ -154,7 +154,7 @@ Response: { "successo": true, "total_like": 3, "user_liked": true }
 ```
 GET /photos.php
 Response: { "successo": true, "foto": [
-  { "id": 1, "percorso": "uploads/...", "username": "Nome", "like": 5 }
+  { "id": 1, "percorso": "../uploads/...", "username": "Nome", "like": 5 }
 ] }
 
 POST /upload.php
