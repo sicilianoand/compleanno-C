@@ -1,24 +1,16 @@
 <?php
 /**
  * Configurazione Database e Costanti
- * File centrale per credenziali e impostazioni globali
  */
 
-// ============================================================================
-// CREDENZIALI DATABASE
-// ============================================================================
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'compleanno_amore');
 
-// ============================================================================
-// IMPOSTAZIONI UPLOAD
-// ============================================================================
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('UPLOAD_MAX_SIZE', 50 * 1024 * 1024); // 50 MB
 
-// MIME types consentiti
 define('ALLOWED_MIME_TYPES', [
     'image/jpeg',
     'image/png',
@@ -28,9 +20,6 @@ define('ALLOWED_MIME_TYPES', [
     'video/quicktime'
 ]);
 
-// ============================================================================
-// CONNESSIONE DATABASE (Singleton Pattern)
-// ============================================================================
 $_pdo_instance = null;
 
 function getDBConnection() {
@@ -58,13 +47,6 @@ function getDBConnection() {
     }
 }
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Invia risposta JSON e termina esecuzione
- */
 function jsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');
@@ -72,9 +54,6 @@ function jsonResponse($data, $statusCode = 200) {
     exit;
 }
 
-/**
- * Crea cartella upload se non esiste
- */
 function ensureUploadDir() {
     if (!is_dir(UPLOAD_DIR)) {
         mkdir(UPLOAD_DIR, 0755, true);

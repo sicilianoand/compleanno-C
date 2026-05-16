@@ -6,25 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
-
     <title>Compleanno Celeste</title>
 </head>
 
 <body>
+    <!-- Overlay con fade -->
+    <div class="header-overlay" id="headerOverlay"></div>
+
+    <!-- Quadratino fisso in alto a DESTRA -->
+    <button class="header-dot" id="headerDot" aria-label="Profilo utente" style="display:none;">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </button>
+
+    <!-- Popup stile iOS -->
+    <div class="header" id="headerBox" role="dialog" aria-label="Profilo utente">
+        <div class="popup-user-row">
+            <div class="popup-avatar">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+            <span id="currentUser"></span>
+        </div>
+        <div class="popup-divider"></div>
+        <button class="btn-user" id="changeUserBtn">Cambia utente</button>
+    </div>
+
     <div>
         <div class="card logo">
-            <div class="numero">
-                18
-            </div>
-            <div class="nome">
-                Celeste
-            </div>
+            <div class="numero">18</div>
+            <div class="nome">Celeste</div>
         </div>
 
         <div>
-            <form action="">
-                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif,.png,.mp4" multiple
-                    max="10" required>
+            <form id="uploadForm">
+                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif,.png,.mp4" multiple max="10" required>
                 <label for="file" id="label">+</label>
 
                 <div id="progressContainer">
@@ -41,14 +55,15 @@
             </form>
         </div>
 
-        <div id="feed">
-            
-        </div>
-
+        <div id="feed"></div>
     </div>
+
+    <!-- Lightbox -->
     <div id="lightbox">
+        <button class="lightbox-close" aria-label="Chiudi">×</button>
         <img id="lightboxImage" src="" alt="">
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="script.js"></script>
 </body>

@@ -34,7 +34,6 @@ function handleToggleLike() {
     $fotoId = $input['foto_id'] ?? null;
     $utenteId = $input['utente_id'] ?? null;
 
-    // Validazione
     if (empty($fotoId) || empty($utenteId) || !is_numeric($fotoId) || !is_numeric($utenteId)) {
         jsonResponse(['errore' => 'Parametri non validi'], 400);
     }
@@ -45,38 +44,32 @@ function handleToggleLike() {
     try {
         $pdo = getDBConnection();
 
-        // Verifica che foto esista
         $stmt = $pdo->prepare('SELECT id FROM foto WHERE id = ?');
         $stmt->execute([$fotoId]);
         if (!$stmt->fetch()) {
             jsonResponse(['errore' => 'Foto non trovata'], 404);
         }
 
-        // Verifica che utente esista
         $stmt = $pdo->prepare('SELECT id FROM utenti WHERE id = ?');
         $stmt->execute([$utenteId]);
         if (!$stmt->fetch()) {
             jsonResponse(['errore' => 'Utente non trovato'], 404);
         }
 
-        // Controlla se like esiste
         $stmt = $pdo->prepare('SELECT id FROM like_foto WHERE foto_id = ? AND utente_id = ?');
         $stmt->execute([$fotoId, $utenteId]);
         $likeExists = $stmt->fetch();
 
         if ($likeExists) {
-            // Rimuovi like
             $stmt = $pdo->prepare('DELETE FROM like_foto WHERE foto_id = ? AND utente_id = ?');
             $stmt->execute([$fotoId, $utenteId]);
             $liked = false;
         } else {
-            // Aggiungi like
             $stmt = $pdo->prepare('INSERT INTO like_foto (foto_id, utente_id) VALUES (?, ?)');
             $stmt->execute([$fotoId, $utenteId]);
             $liked = true;
         }
 
-        // Conta totale like
         $stmt = $pdo->prepare('SELECT COUNT(*) as total FROM like_foto WHERE foto_id = ?');
         $stmt->execute([$fotoId]);
         $result = $stmt->fetch();
@@ -111,13 +104,11 @@ function handleCountLikes() {
     try {
         $pdo = getDBConnection();
 
-        // Conta totale like per foto
         $stmt = $pdo->prepare('SELECT COUNT(*) as total FROM like_foto WHERE foto_id = ?');
         $stmt->execute([$fotoId]);
         $result = $stmt->fetch();
         $totalLike = (int)$result['total'];
 
-        // Controlla se l'utente corrente ha messo like
         $userLiked = false;
         if ($utenteId !== null) {
             $stmt = $pdo->prepare('SELECT id FROM like_foto WHERE foto_id = ? AND utente_id = ?');

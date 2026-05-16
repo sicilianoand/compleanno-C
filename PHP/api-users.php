@@ -33,19 +33,16 @@ function handleRegister() {
     $input = json_decode(file_get_contents('php://input'), true);
     $username = $input['username'] ?? null;
 
-    // Validazione username
     if (empty($username)) {
         jsonResponse(['errore' => 'Username non fornito'], 400);
     }
 
     $username = trim($username);
 
-    // Minimo 2 caratteri
     if (strlen($username) < 2) {
         jsonResponse(['errore' => 'Username minimo 2 caratteri'], 400);
     }
 
-    // Sanitizza: solo alphanumerici, underscore, spazi
     $username = preg_replace('/[^a-zA-Z0-9_ ]/u', '', $username);
 
     if (empty($username)) {
@@ -55,13 +52,11 @@ function handleRegister() {
     try {
         $pdo = getDBConnection();
 
-        // Controlla se utente esiste
         $stmt = $pdo->prepare('SELECT id, username FROM utenti WHERE username = ?');
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
         if ($user) {
-            // Utente già esiste
             jsonResponse([
                 'successo' => true,
                 'id' => (int)$user['id'],
@@ -70,7 +65,6 @@ function handleRegister() {
             ]);
         }
 
-        // Inserisci nuovo utente
         $stmt = $pdo->prepare('INSERT INTO utenti (username) VALUES (?)');
         $stmt->execute([$username]);
         $userId = (int)$pdo->lastInsertId();
