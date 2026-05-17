@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap">
+    <link rel="icon" href="img/icon/icon.png" type="image/png">
     <title>Compleanno Celeste</title>
 </head>
 
@@ -15,14 +16,20 @@
 
     <!-- Quadratino fisso in alto a DESTRA -->
     <button class="header-dot" id="headerDot" aria-label="Profilo utente" style="display:none;">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
     </button>
 
     <!-- Popup stile iOS -->
     <div class="header" id="headerBox" role="dialog" aria-label="Profilo utente">
         <div class="popup-user-row">
             <div class="popup-avatar">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
             </div>
             <span id="currentUser"></span>
         </div>
@@ -38,8 +45,12 @@
 
         <div>
             <form id="uploadForm">
-                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif,.png,.mp4" multiple max="10" required>
-                <label for="file" id="label">+</label>
+                <input type="file" name="file" id="file" accept=".jpg,.jpeg,.raw,.heic,.heif,.png,.mp4" multiple
+                    max="10" required>
+                <label for="file" id="label">
+                    <div class="label-plus">+</div>
+                    <span class="label-testo">Aggiungi foto o video</span>
+                </label>
 
                 <div id="progressContainer">
                     <div id="progressBar"></div>

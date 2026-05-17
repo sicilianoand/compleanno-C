@@ -19,8 +19,9 @@ Un'app web per condividere foto e video durante una festa di compleanno, con fee
 
 - **Feed real-time** — nuove foto e cancellazioni appaiono istantaneamente su tutti i dispositivi connessi, senza ricaricare la pagina (Server-Sent Events)
 - **Upload multiplo** — fino a 10 file per volta con anteprima in griglia; supporto nativo per HEIC/HEIF (iPhone)
-- **Sistema like** — animazione elastica stile Liquid OS, persistita nel database
-- **Gestione utenti** — registrazione al primo accesso, riconoscimento automatico via LocalStorage
+- **Like real-time** — i contatori si aggiornano in diretta su tutti i client via SSE; animazione elastica stile Liquid OS, persistita nel database
+- **Reazioni emoji** — 12 emoji di festa selezionabili dal picker; un'emoji per utente per foto (cambio o rimozione con un tap); contatori in tempo reale via SSE
+- **Gestione utenti** — registrazione al primo accesso, riconoscimento automatico via LocalStorage, verifica sessione ad ogni operazione
 - **Eliminazione foto** — solo le proprie, con propagazione real-time a tutti i client
 - **Badge prima foto** — la foto caricata per prima riceve un banner 🏆 animato
 - **UI glassmorphism** — popup login, confirm dialog e notifiche con effetto vetro/acqua e blur iOS
@@ -133,6 +134,16 @@ Browser A                    PHP events.php              Browser B
     │                              │  SELECT foto_eliminate   │
     │◄── event: foto-eliminata ────┤── event: foto-eliminata ►│
     │    (animazione + remove)     │   (animazione + remove)  │
+    │                              │                          │
+    │  [B mette like a una foto]   │                          │
+    │                              │  SELECT like_foto diff   │
+    │◄── event: like-aggiornato ───┤── event: like-aggiornato►│
+    │    (contatore aggiornato)    │   (contatore aggiornato) │
+    │                              │                          │
+    │  [A reagisce con 🎉]         │                          │
+    │                              │  SELECT reazioni diff    │
+    │◄── event: reazioni-aggiorn.──┤── event: reazioni-aggiorn►│
+    │    (bubble aggiornate)       │   (bubble aggiornate)    │
 ```
 
 - Il server controlla il DB ogni **1 secondo**
@@ -186,6 +197,20 @@ data: { "foto": [ {...} ] }
 
 event: foto-eliminata
 data: { "ids": [12, 15] }
+
+event: like-aggiornato
+data: { "like": [ { "foto_id": 5, "total_like": 4, "user_liked": true } ] }
+
+event: reazioni-aggiornate
+data: { "aggiornamenti": [ { "foto_id": 5, "reazioni": [ { "emoji": "🎉", "count": 2, "user_reacted": true } ] } ] }
+```
+
+### Reazioni
+
+```
+POST /PHP/api-reactions.php?action=toggle
+Body: { "foto_id": 5, "utente_id": 1, "emoji": "🎉" }
+→ { "successo": true, "user_emoji": "🎉", "reazioni": [ { "emoji": "🎉", "count": 1, "user_reacted": true } ] }
 ```
 
 ---

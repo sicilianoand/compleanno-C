@@ -45,18 +45,59 @@ try {
         );
     }
 
-    $foto = $stmt->fetchAll();
+    $foto    = $stmt->fetchAll();
+    $fotoIds = array_column($foto, 'id');
 
-    $result = array_map(function ($item) {
+    // Reazioni per foto (in un'unica query per evitare N+1)
+    $reazioniPerFoto = []; // foto_id => [ [emoji, count] ]
+    $userReazioni    = []; // foto_id => emoji
+
+    if (!empty($fotoIds)) {
+        try {
+            $ph = implode(',', array_fill(0, count($fotoIds), '?'));
+
+            $stmt = $pdo->prepare(
+                "SELECT foto_id, emoji, COUNT(*) AS cnt
+                 FROM reazioni WHERE foto_id IN ($ph)
+                 GROUP BY foto_id, emoji ORDER BY cnt DESC"
+            );
+            $stmt->execute($fotoIds);
+            foreach ($stmt->fetchAll() as $r) {
+                $reazioniPerFoto[(int)$r['foto_id']][] = ['emoji' => $r['emoji'], 'count' => (int)$r['cnt']];
+            }
+
+            if ($utenteId !== null) {
+                $stmt = $pdo->prepare(
+                    "SELECT foto_id, emoji FROM reazioni WHERE utente_id = ? AND foto_id IN ($ph)"
+                );
+                $stmt->execute(array_merge([$utenteId], $fotoIds));
+                foreach ($stmt->fetchAll() as $r) {
+                    $userReazioni[(int)$r['foto_id']] = $r['emoji'];
+                }
+            }
+        } catch (Exception $e) {
+            // Tabella reazioni non ancora creata — reazioni vuote
+        }
+    }
+
+    $result = array_map(function ($item) use ($reazioniPerFoto, $userReazioni) {
+        $fotoId    = (int)$item['id'];
+        $userEmoji = $userReazioni[$fotoId] ?? null;
+        $reazioni  = array_map(fn($r) => [
+            'emoji'        => $r['emoji'],
+            'count'        => $r['count'],
+            'user_reacted' => $r['emoji'] === $userEmoji,
+        ], $reazioniPerFoto[$fotoId] ?? []);
+
         return [
-            'id'         => (int)$item['id'],
-            // Il percorso è già salvato come "uploads/nomefile" → corretto per index.html nella root
+            'id'         => $fotoId,
             'percorso'   => $item['percorso'],
             'tipo'       => $item['tipo_file'],
             'username'   => $item['username'],
             'data'       => $item['created_at'],
             'like'       => (int)$item['total_like'],
-            'user_liked' => (bool)$item['user_liked']
+            'user_liked' => (bool)$item['user_liked'],
+            'reazioni'   => $reazioni,
         ];
     }, $foto);
 

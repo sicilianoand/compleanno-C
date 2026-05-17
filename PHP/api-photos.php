@@ -41,22 +41,26 @@ function handleDeletePhoto() {
             jsonResponse(['errore' => 'Non autorizzato: puoi eliminare solo le tue foto'], 403);
         }
 
-        $percorso = dirname(__DIR__) . '/' . $foto['percorso'];
+        // Ricava il percorso assoluto usando solo il basename — previene path traversal
+        $percorso = UPLOAD_DIR . basename($foto['percorso']);
+
+        // DDL fuori dalla transazione — in MySQL CREATE TABLE causa un commit implicito
+        $pdo->exec('CREATE TABLE IF NOT EXISTS foto_eliminate (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            foto_id INT NOT NULL,
+            eliminata_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
         $pdo->beginTransaction();
 
         $stmt = $pdo->prepare('DELETE FROM like_foto WHERE foto_id = ?');
         $stmt->execute([$fotoId]);
 
-        $stmt = $pdo->prepare('DELETE FROM foto WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM reazioni WHERE foto_id = ?');
         $stmt->execute([$fotoId]);
 
-        // Log per SSE — notifica tutti i client connessi in tempo reale
-        $pdo->exec('CREATE TABLE IF NOT EXISTS foto_eliminate (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            foto_id INT NOT NULL,
-            eliminata_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        $stmt = $pdo->prepare('DELETE FROM foto WHERE id = ?');
+        $stmt->execute([$fotoId]);
 
         $stmt = $pdo->prepare('INSERT INTO foto_eliminate (foto_id) VALUES (?)');
         $stmt->execute([$fotoId]);
@@ -73,6 +77,9 @@ function handleDeletePhoto() {
         ]);
 
     } catch (Exception $e) {
+        if (isset($pdo) && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log('Errore eliminazione foto: ' . $e->getMessage());
         jsonResponse(['errore' => 'Errore database'], 500);
     }

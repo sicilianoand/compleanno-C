@@ -3,6 +3,13 @@
  * Gestione utenti, upload foto, sistema like Liquid OS
  */
 
+// ============= FEEDBACK APTICO =============
+
+const vibra = (() => {
+    const ok = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+    return (pattern) => { if (ok) navigator.vibrate(pattern); };
+})();
+
 // ============= GESTIONE UTENTI =============
 
 let currentUser = null;
@@ -81,15 +88,55 @@ async function initUser() {
     const storedUsername = localStorage.getItem('username');
 
     if (storedUserId && storedUsername) {
-        // Utente già registrato
+        const esiste = await verificaUtente(parseInt(storedUserId));
+        if (!esiste) {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            promptForUsername();
+            return;
+        }
         currentUserId = parseInt(storedUserId);
         currentUser = storedUsername;
         updateUserDisplay();
-        caricaFoto(); // FIX Bug 3: carica il feed anche per utenti già registrati
+        caricaFoto();
     } else {
-        // Richiedi username
         promptForUsername();
     }
+}
+
+/**
+ * Verifica che l'utente con il dato id esista ancora nel database.
+ * Restituisce false se non trovato (404), true in tutti gli altri casi
+ * (inclusi errori di rete, per evitare logout involontari offline).
+ */
+async function verificaUtente(userId) {
+    try {
+        const response = await fetch(`PHP/api-users.php?action=get&id=${userId}`);
+        if (response.status === 404) return false;
+        const data = await response.json();
+        return !!data.successo;
+    } catch {
+        return true; // errore di rete: non disconnettere
+    }
+}
+
+/**
+ * Controlla che la sessione corrente sia ancora valida.
+ * Se l'utente non esiste più nel DB, lo disconnette e restituisce false.
+ */
+async function controllaSessione() {
+    if (!currentUserId) return false;
+    const esiste = await verificaUtente(currentUserId);
+    if (!esiste) {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        currentUser = null;
+        currentUserId = null;
+        showNotification('⚠️ Il tuo account non esiste più. Effettua di nuovo il login.');
+        promptForUsername();
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -272,6 +319,7 @@ async function showPreviewImage(file) {
 
         btnRemove.addEventListener('click', (e) => {
             e.preventDefault();
+            URL.revokeObjectURL(url);
             wrapper.remove();
             aggiornaGriglia();
         });
@@ -308,17 +356,20 @@ function aggiornaGriglia() {
         preview.style.gridTemplateColumns = 'repeat(2, 1fr)';
     }
 
-    document.getElementById('label').style.display = immagini >= 10 ? 'none' : 'block';
+    document.getElementById('label').style.display = immagini >= 10 ? 'none' : 'flex';
 }
 
 /**
  * Reset form
  */
 document.getElementById('reset').addEventListener('click', () => {
+    document.querySelectorAll('.previewImage').forEach(img => {
+        if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    });
     document.getElementById('preview').innerHTML = '';
     document.getElementById('preview').style.display = 'none';
     document.getElementById('formButton').style.display = 'none';
-    document.getElementById('label').style.display = 'block';
+    document.getElementById('label').style.display = 'flex';
     document.getElementById('status').textContent = '';
 });
 
@@ -334,6 +385,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         return;
     }
 
+    if (!await controllaSessione()) return;
+
     const immagini = document.querySelectorAll('.previewImage');
 
     if (immagini.length === 0) {
@@ -342,16 +395,22 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     }
 
     const submitBtn = document.getElementById('submit');
+    const resetBtn = document.getElementById('reset');
     const statusEl = document.getElementById('status');
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
 
     submitBtn.disabled = true;
+    resetBtn.disabled = true;
     statusEl.textContent = '⏳ Preparazione file...';
 
     // FIX Bug 7: mostra la progress bar
     progressContainer.style.display = 'block';
     progressBar.style.width = '0%';
+
+    // Catturato prima dell'upload: l'SSE potrebbe aggiornare maxFotoId
+    // durante la richiesta e renderebbe il check successivo sempre falso.
+    const feedEraVuoto = maxFotoId === 0;
 
     try {
         const formData = new FormData();
@@ -402,11 +461,12 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         progressBar.style.width = '100%';
 
         if (result.successo) {
+            vibra([10, 30, 10, 30, 60]);  // pattern festoso — upload completato
             statusEl.textContent = `✅ ${result.caricate} foto caricate con successo!`;
             document.getElementById('preview').innerHTML = '';
             document.getElementById('preview').style.display = 'none';
             document.getElementById('formButton').style.display = 'none';
-            document.getElementById('label').style.display = 'block';
+            document.getElementById('label').style.display = 'flex';
 
             // Inserisce subito le nuove foto in cima al feed senza aspettare una seconda fetch
             const feed = document.getElementById('feed');
@@ -424,24 +484,32 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
                     username: currentUser,
                     data: new Date().toISOString(),
                     like: 0,
-                    user_liked: false
+                    user_liked: false,
+                    reazioni: [],
                 });
                 // Aggiorna il src con quello reale del server in background
                 const imgEl = post.querySelector('.photoImage');
                 if (imgEl) {
                     const realImg = new Image();
-                    realImg.onload = () => { imgEl.src = foto.percorso; };
+                    realImg.onload = () => {
+                        if (imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+                        imgEl.src = foto.percorso;
+                    };
                     realImg.src = foto.percorso;
                 }
                 feed.insertBefore(post, feed.firstChild);
             });
             attachLikeListeners();
 
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                progressBar.style.width = '0%';
-                statusEl.textContent = '';
-            }, 1200);
+            if (feedEraVuoto) {
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    statusEl.textContent = '';
+                }, 1200);
+            }
         } else {
             statusEl.textContent = `❌ Errore: ${(result.errori || []).join(', ')}`;
             progressContainer.style.display = 'none';
@@ -453,6 +521,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         progressContainer.style.display = 'none';
     } finally {
         submitBtn.disabled = false;
+        resetBtn.disabled = false;
     }
 });
 
@@ -482,6 +551,118 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLightbox();
 });
 
+// ============= SISTEMA REAZIONI =============
+
+const EMOJI_SET = ['🎉','😍','😂','🔥','❤️','🥂','🎂','💃','🕺','😎','🤩','🥳'];
+
+const emojiPicker = (() => {
+    const el = document.createElement('div');
+    el.className = 'emoji-picker';
+    el.innerHTML = EMOJI_SET.map(e => `<button class="emoji-opt" type="button">${e}</button>`).join('');
+    document.body.appendChild(el);
+    return el;
+})();
+
+let pickerFotoId = null;
+
+function apriEmojiPicker(triggerBtn, fotoId) {
+    pickerFotoId = fotoId;
+    const rect = triggerBtn.getBoundingClientRect();
+    const ph   = emojiPicker.offsetHeight;
+    const pw   = emojiPicker.offsetWidth;
+    let top    = rect.top - ph - 8;
+    let left   = rect.left;
+    if (top < 8) top = rect.bottom + 8;
+    left = Math.min(left, window.innerWidth - pw - 8);
+    left = Math.max(8, left);
+    emojiPicker.style.top  = top + 'px';
+    emojiPicker.style.left = left + 'px';
+    emojiPicker.classList.add('aperto');
+    vibra(6);
+}
+
+function chiudiEmojiPicker() {
+    emojiPicker.classList.remove('aperto');
+    pickerFotoId = null;
+}
+
+emojiPicker.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.emoji-opt');
+    if (!btn || pickerFotoId === null) return;
+    const fotoId = pickerFotoId;
+    chiudiEmojiPicker();
+    vibra([15, 30, 40]);   // crescente — selezione confermata
+    await toggleReazione(fotoId, btn.textContent.trim());
+});
+
+document.addEventListener('pointerdown', (e) => {
+    if (!emojiPicker.classList.contains('aperto')) return;
+    if (!emojiPicker.contains(e.target) && !e.target.closest('.btn-react')) {
+        chiudiEmojiPicker();
+    }
+});
+
+async function toggleReazione(fotoId, emoji) {
+    if (!currentUserId) {
+        showNotification('❌ Devi essere autenticato per reagire');
+        return;
+    }
+    if (!await controllaSessione()) return;
+
+    try {
+        const response = await fetch('PHP/api-reactions.php?action=toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ foto_id: fotoId, utente_id: currentUserId, emoji }),
+        });
+        const data = await response.json();
+        if (data.successo) {
+            const bar = document.querySelector(`.reactions-inline[data-foto-id="${fotoId}"]`);
+            if (bar) renderReazioni(data.reazioni, bar);
+        }
+    } catch (err) {
+        console.error('Errore reazione:', err);
+    }
+}
+
+function renderReazioni(reazioni, barEl) {
+    const fotoId = parseInt(barEl.dataset.fotoId);
+
+    // Sincronizza il bottone trigger
+    const btnReact = document.querySelector(`.btn-react[data-foto-id="${fotoId}"]`);
+    if (btnReact) {
+        const userReazione = reazioni?.find(r => r.user_reacted);
+        const emojiSpan = btnReact.querySelector('.react-emoji');
+        if (userReazione) {
+            const cambio = !btnReact.classList.contains('attivo') ||
+                           emojiSpan?.textContent !== userReazione.emoji;
+            btnReact.classList.add('attivo');
+            if (emojiSpan) emojiSpan.textContent = userReazione.emoji;
+            if (cambio) {
+                btnReact.classList.add('anima');
+                setTimeout(() => btnReact.classList.remove('anima'), 600);
+            }
+        } else {
+            btnReact.classList.remove('attivo');
+            if (emojiSpan) emojiSpan.textContent = '😊';
+        }
+    }
+
+    barEl.innerHTML = '';
+    if (!reazioni || reazioni.length === 0) return;
+    reazioni.forEach(({ emoji, count, user_reacted }) => {
+        const bubble = document.createElement('button');
+        bubble.className = 'reaction-bubble' + (user_reacted ? ' mia' : '');
+        bubble.type  = 'button';
+        bubble.title = emoji;
+        bubble.innerHTML = `<span class="r-emoji">${emoji}</span><span class="r-count">${count}</span>`;
+        bubble.addEventListener('click', () => {
+            toggleReazione(fotoId, emoji);
+        });
+        barEl.appendChild(bubble);
+    });
+}
+
 // ============= GESTIONE FEED E LIKE =============
 
 function getHeartSvg() {
@@ -509,8 +690,10 @@ function creaPostElement(foto, isPrima = false) {
     const header = document.createElement('div');
     header.classList.add('post-header');
     const isOwnPhoto = foto.username === currentUser;
+    const isFesteggiata = foto.username === 'Ce';
+    if (isFesteggiata) post.classList.add('festeggiata');
     header.innerHTML = `
-        <span class="post-username">👤 ${escapeHtml(foto.username)}</span>
+        <span class="post-username">${isFesteggiata ? '👑' : '👤'} ${escapeHtml(foto.username)}</span>
         <span class="post-date">${formatDate(foto.data)}</span>
         ${isOwnPhoto ? '<button class="btn-delete-photo" title="Elimina questa foto">🗑️</button>' : ''}
     `;
@@ -525,6 +708,9 @@ function creaPostElement(foto, isPrima = false) {
                 return;
             }
 
+            if (!await controllaSessione()) return;
+
+            vibra([30, 50, 100]);  // pattern decrescente — azione distruttiva
             deleteBtn.disabled = true;
             deleteBtn.textContent = '⏳';
 
@@ -541,9 +727,12 @@ function creaPostElement(foto, isPrima = false) {
                 const data = await response.json();
 
                 if (data.successo) {
+                    const feed = document.getElementById('feed');
+                    const eraUltima = feed.querySelectorAll('.post').length === 1;
                     post.style.opacity = '0.5';
                     setTimeout(() => {
                         post.remove();
+                        if (eraUltima) location.reload();
                     }, 300);
                 } else {
                     showNotification('❌ Errore eliminazione: ' + (data.errore || 'Sconosciuto'));
@@ -591,6 +780,35 @@ function creaPostElement(foto, isPrima = false) {
         <span class="like-count">${foto.like}</span>
     `;
     actions.appendChild(likeBtn);
+
+    const userReazione = foto.reazioni?.find(r => r.user_reacted);
+
+    const btnReact = document.createElement('button');
+    btnReact.className = 'btn-react' + (userReazione ? ' attivo' : '');
+    btnReact.type = 'button';
+    btnReact.dataset.fotoId = foto.id;
+    btnReact.title = 'Aggiungi reazione';
+
+    const reactEmoji = document.createElement('span');
+    reactEmoji.className = 'react-emoji';
+    reactEmoji.textContent = userReazione ? userReazione.emoji : '😊';
+    btnReact.appendChild(reactEmoji);
+
+    btnReact.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (emojiPicker.classList.contains('aperto') && pickerFotoId === foto.id) {
+            chiudiEmojiPicker();
+        } else {
+            apriEmojiPicker(btnReact, foto.id);
+        }
+    });
+    actions.appendChild(btnReact);
+
+    const reactionsInline = document.createElement('div');
+    reactionsInline.className = 'reactions-inline';
+    reactionsInline.dataset.fotoId = foto.id;
+    if (foto.reazioni?.length) renderReazioni(foto.reazioni, reactionsInline);
+    actions.appendChild(reactionsInline);
 
     post.appendChild(header);
     post.appendChild(media);
@@ -709,13 +927,35 @@ function avviaSSE() {
     sseConnessione = new EventSource(`PHP/events.php?${params}`);
 
     sseConnessione.addEventListener('nuove-foto', (e) => {
+        errori = 0;
         const { foto } = JSON.parse(e.data);
         if (foto?.length) inserisciFotoNelFeed(foto);
     });
 
     sseConnessione.addEventListener('foto-eliminata', (e) => {
+        errori = 0;
         const { ids } = JSON.parse(e.data);
         ids?.forEach(eliminaPostDalFeed);
+    });
+
+    sseConnessione.addEventListener('like-aggiornato', (e) => {
+        errori = 0;
+        const { like } = JSON.parse(e.data);
+        like?.forEach(({ foto_id, total_like, user_liked }) => {
+            const btn = document.querySelector(`.btn-like[data-foto-id="${foto_id}"]`);
+            if (!btn) return;
+            btn.querySelector('.like-count').textContent = total_like;
+            btn.classList.toggle('liked', user_liked);
+        });
+    });
+
+    sseConnessione.addEventListener('reazioni-aggiornate', (e) => {
+        errori = 0;
+        const { aggiornamenti } = JSON.parse(e.data);
+        aggiornamenti?.forEach(({ foto_id, reazioni }) => {
+            const bar = document.querySelector(`.reactions-inline[data-foto-id="${foto_id}"]`);
+            if (bar) renderReazioni(reazioni, bar);
+        });
     });
 
     let errori = 0;
@@ -807,6 +1047,8 @@ function attachLikeListeners() {
                 return;
             }
 
+            if (!await controllaSessione()) return;
+
             const fotoId = parseInt(btn.dataset.fotoId);
 
             // Feedback visivo immediato (ottimistico)
@@ -818,8 +1060,11 @@ function attachLikeListeners() {
             countEl.textContent = wasLiked ? currentCount - 1 : currentCount + 1;
 
             if (!wasLiked) {
+                vibra([10, 40, 20]);   // doppio colpo leggero — like dato
                 btn.classList.add('animate');
                 setTimeout(() => btn.classList.remove('animate'), 600);
+            } else {
+                vibra(8);              // colpo singolo — like tolto
             }
 
             try {
